@@ -17,17 +17,18 @@ docker:
 
 provider:
     type: local
-    head_ip: somai-serv01.emory.edu
+    head_ip: 170.140.138.87
     # You may need to supply a public ip for the head node if you need
     # to run `ray up` from outside of the Ray cluster's network
     # (e.g. the cluster is in an AWS VPC and you're starting ray from your laptop)
     # This is useful when debugging the local node provider with cloud VMs.
     # external_head_ip: YOUR_HEAD_PUBLIC_IP
-    worker_ips: [somai-serv02.emory.edu, somai-serv03.emory.edu]
+    worker_ips: [170.140.138.63, 170.140.138.73]
     # Optional when running automatic cluster management on prem. If you use a coordinator server,
     # then you can launch multiple autoscaling clusters on the same set of machines, and the coordinator
     # will assign individual nodes to clusters as needed.
     #    coordinator_address: "<host>:<port>"
+    cache_stopped_nodes: False  # JJ note: does not seem to have an effect for local provider.
 
 # How Ray will authenticate with newly launched nodes.
 auth:
@@ -99,27 +100,18 @@ rsync_filter:
 # List of commands that will be run before `setup_commands`. If docker is
 # enabled, these commands will run outside the container and before docker
 # is setup.
-initialization_commands: []
+initialization_commands: [
+
+    # JJ note: unclear if there is a variable for root path.
+    # docker compose -f /tmp/ray_tmp_mount/qa_cluster/docker-compose.yaml up -d,
+    # JJ note: Worker nodes do not shut down properly, so we need to ensure they are shut down so that the new image can be pulled and run.
+    docker stop jjaco34_hqc_ray || true,
+]
 
 # List of shell commands to run to set up each nodes.
 setup_commands: []
-    # If we have e.g. conda dependencies stored in "/path1/on/local/machine/environment.yaml", we can prepare the
-    # work environment on each worker by:
-    #   1. making sure each worker has access to this file i.e. see the `file_mounts` section
-    #   2. adding a command here that creates a new conda environment on each node or if the environment already exists,
-    #     it updates it:
-    #      conda env create -q -n my_venv -f /path1/on/local/machine/environment.yaml || conda env update -q -n my_venv -f /path1/on/local/machine/environment.yaml
-    #
-    # Ray developers:
-    # you probably want to create a Docker image that
-    # has your Ray repo pre-cloned. Then, you can replace the pip installs
-    # below with a git checkout <your_sha> (and possibly a recompile).
-    # To run the nightly version of ray (as opposed to the latest), either use a rayproject docker image
-    # that has the "nightly" (e.g. "rayproject/ray-ml:nightly-gpu") or uncomment the following line:
-    # - pip install -U "ray[default] @ https://s3-us-west-2.amazonaws.com/ray-wheels/latest/ray-3.0.0.dev0-cp37-cp37m-manylinux2014_x86_64.whl"
 
-# Custom commands that will be run on the head node after common setup.
-head_setup_commands: ['mkdir ~/.ssh', 'echo -e "Host *\n\tStrictHostKeyChecking no\n\tUserKnownHostsFile /dev/null" >> ~/.ssh/config']
+head_setup_commands: ['mkdir -p ~/.ssh', 'echo -e "Host *\n\tStrictHostKeyChecking no\n\tUserKnownHostsFile /dev/null" >> ~/.ssh/config']
 
 # Custom commands that will be run on worker nodes after common setup.
 worker_setup_commands: []
