@@ -6,9 +6,9 @@ cluster_name: qa_cluster
 # and opens all the necessary ports to support the Ray cluster.
 # Empty string means disabled. Assumes Docker is installed.
 docker:
-    # image: "histotools/histoqc_ray:ray_cluster_functionality" # You can change this to latest-cpu if you don't need GPU support and want a faster startup
-    image: rayproject/ray:latest-cpu   # use this one if you don't need ML dependencies, it's faster to pull
-    container_name: "jjaco34_hqc_ray"
+    image: "rayproject/ray:latest" # You can change this to latest-cpu if you don't need GPU support and want a faster startup
+    # image: histotools/quickannotator:main   # use this one if you don't need ML dependencies, it's faster to pull
+    container_name: "qa_container"
     # If true, pulls latest version of image. Otherwise, `docker run` will only pull the image
     # if no cached version is present.
     pull_before_run: True
@@ -72,6 +72,7 @@ idle_timeout_minutes: 30
 # that directory to all nodes and call `conda -n my_env -f /path1/on/remote/machine/environment.yaml`. In this
 # example paths on all nodes must be the same (so that conda can be called always with the same argument)
 file_mounts: {
+    "/docker_config/": "./",  # Mount local docker-compose.yaml to /app in the container
 #    "/path1/on/remote/machine": "/path1/on/local/machine",
 #    "/path2/on/remote/machine": "/path2/on/local/machine",
 }
@@ -103,27 +104,27 @@ rsync_filter:
 initialization_commands: [
 
     # JJ note: unclear if there is a variable for root path.
-    # docker compose -f /tmp/ray_tmp_mount/qa_cluster/docker-compose.yaml up -d,
+    docker compose -f /tmp/ray_tmp_mount/qa_cluster/docker_config/docker-compose.yaml up -d,
     # JJ note: Worker nodes do not shut down properly, so we need to ensure they are shut down so that the new image can be pulled and run.
-    docker stop jjaco34_hqc_ray || true,
+    docker stop qa_container || true,
 ]
 
 # List of shell commands to run to set up each nodes.
 setup_commands: []
 
-head_setup_commands: ['mkdir -p ~/.ssh', 'echo -e "Host *\n\tStrictHostKeyChecking no\n\tUserKnownHostsFile /dev/null" >> ~/.ssh/config']
+# head_setup_commands: ['mkdir -p ~/.ssh', 'echo -e "Host *\n\tStrictHostKeyChecking no\n\tUserKnownHostsFile /dev/null" >> ~/.ssh/config']
 
 # Custom commands that will be run on worker nodes after common setup.
 worker_setup_commands: []
 
 # Command to start ray on the head node. You don't need to change this.
 head_start_ray_commands:
-  # If we have e.g. conda dependencies, we could create on each node a conda environment (see `setup_commands` section).
-  # In that case we'd have to activate that env on each node before running `ray`:
-  # - conda activate my_venv && ray stop
-  # - conda activate my_venv && ulimit -c unlimited && ray start --head --port=6379 --autoscaling-config=~/ray_bootstrap_config.yaml
-    - ray stop
-    - ulimit -c unlimited && ray start --head --port=6379 --dashboard-port=8265 --autoscaling-config=~/ray_bootstrap_config.yaml
+    # If we have e.g. conda dependencies, we could create on each node a conda environment (see `setup_commands` section).
+    # In that case we'd have to activate that env on each node before running `ray`:
+    # - conda activate my_venv && ray stop
+    # - conda activate my_venv && ulimit -c unlimited && ray start --head --port=6379 --autoscaling-config=/root/ray_bootstrap_config.yaml
+        - ray stop
+        - ulimit -c unlimited && ray start --head --port=6379 --dashboard-port=8265 #--autoscaling-config=/root/ray_bootstrap_config.yaml
 
 # Command to start ray on worker nodes. You don't need to change this.
 worker_start_ray_commands:

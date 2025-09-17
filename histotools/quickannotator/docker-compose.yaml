@@ -17,14 +17,12 @@ services:
       - qa_net
 
   grafana:
-    build:
-      context: ./grafana
-      dockerfile: Dockerfile
+    image: grafana/grafana:latest
     container_name: grafana_configured
     environment:
       GF_SECURITY_ADMIN_PASSWORD: admin
     ports:
-      - "3000:3000"
+      - "5111:3000"
     depends_on:
       - postgis
     restart: unless-stopped
