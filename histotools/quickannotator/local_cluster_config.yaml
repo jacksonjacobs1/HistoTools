@@ -6,14 +6,15 @@ cluster_name: qa_cluster
 # and opens all the necessary ports to support the Ray cluster.
 # Empty string means disabled. Assumes Docker is installed.
 docker:
-    image: "rayproject/ray:latest" # You can change this to latest-cpu if you don't need GPU support and want a faster startup
+    image: "histotools/quickannotator:main" # You can change this to latest-cpu if you don't need GPU support and want a faster startup
     # image: histotools/quickannotator:main   # use this one if you don't need ML dependencies, it's faster to pull
     container_name: "qa_container"
     # If true, pulls latest version of image. Otherwise, `docker run` will only pull the image
     # if no cached version is present.
     pull_before_run: True
-    run_options:   # Extra options to pass into "docker run"
+    run_options:
         - --ulimit nofile=65536:65536
+        - -e POSTGRES_URI=postgresql+psycopg2://admin:admin@170.140.138.87:5432/qa_postgis_db
 
 provider:
     type: local
@@ -112,7 +113,7 @@ initialization_commands: [
 # List of shell commands to run to set up each nodes.
 setup_commands: []
 
-# head_setup_commands: ['mkdir -p ~/.ssh', 'echo -e "Host *\n\tStrictHostKeyChecking no\n\tUserKnownHostsFile /dev/null" >> ~/.ssh/config']
+head_setup_commands: ['mkdir -p ~/.ssh', 'echo -e "Host *\n\tStrictHostKeyChecking no\n\tUserKnownHostsFile /dev/null" >> ~/.ssh/config']
 
 # Custom commands that will be run on worker nodes after common setup.
 worker_setup_commands: []
@@ -124,7 +125,7 @@ head_start_ray_commands:
     # - conda activate my_venv && ray stop
     # - conda activate my_venv && ulimit -c unlimited && ray start --head --port=6379 --autoscaling-config=/root/ray_bootstrap_config.yaml
         - ray stop
-        - ulimit -c unlimited && ray start --head --port=6379 --dashboard-port=8265 #--autoscaling-config=/root/ray_bootstrap_config.yaml
+        - ulimit -c unlimited && ray start --head --port=6379 --dashboard-port=8265 --autoscaling-config=~/ray_bootstrap_config.yaml
 
 # Command to start ray on worker nodes. You don't need to change this.
 worker_start_ray_commands:
